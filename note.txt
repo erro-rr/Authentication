@@ -1,0 +1,11 @@
+ Register User 
+ Mail Verification
+ Login
+ Jwt Authentication
+ User Profile
+ Refresh Token
+ Forget Password
+ Reset Password
+ Authentication API's
+ Logout API
+ 
