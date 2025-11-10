@@ -1,20 +1,27 @@
 const user = require('../models/userModel');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
-const path = require('path'); 
+const path = require('path');
+const { validationResult } = require('express-validator');
+const deleteUploadFilefunc = require('../helpers/deleteUploadFile');
 
 const userRegister = async (req, res) => {
   try {
+    const error = validationResult(req);
+    if (!error.isEmpty()) {
+      deleteUploadFilefunc(req.file);
+      return res.status(400).json({
+        success: false,
+        Msg: "Error",
+        Error: error.array()
+      })
+    }
     const { name, email, password, mobile } = req.body;
     console.log(req.body);
 
     const isUserExists = await user.findOne({ email });
     if (isUserExists) {
-      if (req.file) {
-        fs.unlink(path.join(__dirname, '../public/images', req.file.filename), (err) => {
-          if (err) console.error('Unable to delete file:', err);
-        });
-      }
+      deleteUploadFilefunc(req.file);
       return res.status(400).json({
         success: false,
         msg: 'Email Already Exists',
@@ -46,7 +53,6 @@ const userRegister = async (req, res) => {
     return res.status(400).json({
       success: false,
       msg: error.message,
-      check: 'check',
     });
   }
 };
