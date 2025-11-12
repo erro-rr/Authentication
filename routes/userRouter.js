@@ -3,7 +3,6 @@ const path = require('path');
 const multer = require('multer');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { error } = require('console');
 const { registerValidator } = require('../helpers/validator');
 
 router.use(express.json());
