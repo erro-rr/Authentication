@@ -50,7 +50,9 @@ const userRegister = async (req, res) => {
     
     // save data in mongo and send status 
     const userData = await newUser.save();
-    const msg = '<p> Hi '+name+' Please verify your email using this <href ="http://127.0.0.1:5000/mail-verification?'+userData.id+'"><link> </p>'
+    console.log(userData);
+    const msg = `<p>Hi ${name}, please verify your email using this <a href="http://127.0.0.1:5000/mail-verification?id=${userData._id}">verification link</a>.</p>`;
+
     mailers.sendMail(email,'Mail Verification',msg);
     return res.status(200).json({
       success: true,

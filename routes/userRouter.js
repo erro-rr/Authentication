@@ -5,8 +5,10 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { registerValidator } = require('../helpers/validator');
 
+// Middleware
 router.use(express.json());
 
+// Use of Multer for user profile image upload
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (file.mimetype == 'image/jpeg' || file.mimetype == 'image/png' || file.mimetype == 'image/jpg') {
@@ -19,6 +21,7 @@ const storage = multer.diskStorage({
     }
 })
 
+// Filter for the image 
 const fileFilter = (req, file, cb) => {
     if (file.mimetype == 'image/jpeg' || file.mimetype == 'image/png' || file.mimetype == 'image/jpg') {
         cb(null, true);
@@ -27,11 +30,13 @@ const fileFilter = (req, file, cb) => {
         cb(null, false);
     }
 }
+// Uploading image
 const upload = multer({
     storage: storage,
     fileFilter: fileFilter
 });
 
+// Router for User registration
 router.post('/register', upload.single('image'), registerValidator, userController.userRegister);
 
 module.exports = router;
