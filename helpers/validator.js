@@ -29,3 +29,9 @@ exports.registerValidator = [
         }
     }).withMessage('Only jpg,jpedg and png image allowed')
 ]
+
+exports.sendEmailVerificationValidator = [
+    check('email', 'Valid email is require').isEmail().normalizeEmail({
+        gmail_remove_dots: true
+    })
+]

@@ -3,7 +3,8 @@ const path = require('path');
 const multer = require('multer');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { registerValidator } = require('../helpers/validator');
+const { registerValidator, sendEmailVerificationValidator } = require('../helpers/validator');
+const authController = require('../controllers/authController');
 
 // Middleware
 router.use(express.json());
@@ -38,6 +39,7 @@ const upload = multer({
 
 // Router for User registration
 router.post('/register', upload.single('image'), registerValidator, userController.userRegister);
+router.get('/send-mail-verification', sendEmailVerificationValidator, authController.sendMailVerification);
 
 module.exports = router;
 

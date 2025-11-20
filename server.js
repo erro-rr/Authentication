@@ -8,13 +8,13 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 
-app.set('view engine','ejs');
-app.set('views','./views');
+app.set('view engine', 'ejs');
+app.set('views', './views');
 
 
 // console.log(port);
 app.use('/API', userRoute);
-app.use('/',authRoute);
+app.use('/API', authRoute);
 
 
 mongoose.connect('mongodb://127.0.0.1:27017/restful_Auth_API')
