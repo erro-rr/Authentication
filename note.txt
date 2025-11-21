@@ -1,5 +1,5 @@
  Register User   --- Done !
- Mail Verification 
+ Mail Verification --- Done
  Login
  Jwt Authentication
  User Profile

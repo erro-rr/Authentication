@@ -3,6 +3,8 @@ const User = require('../models/userModel');
 const { message } = require('statuses');
 const mailers = require('../helpers/mailers');
 const { validationResult } = require("express-validator");
+const randomstring = require('randomstring');
+const PasswordReset = require('../models/passwordReset');
 
 const mailVerification = async (req, res) => {
   try {
@@ -50,6 +52,7 @@ const mailVerification = async (req, res) => {
 // if anyone missed the mail somehow then we need a api to trigger it again
 const sendMailVerification = async (req, res) => {
   try {
+    // checking mail validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.status(400).json({
@@ -59,6 +62,8 @@ const sendMailVerification = async (req, res) => {
       })
     }
     else {
+
+      // Checking if mail is register or existing in our database or not
       const { email } = req.body;
       const userData = await User.findOne({ email });
       if (!userData) {
@@ -67,12 +72,16 @@ const sendMailVerification = async (req, res) => {
           msg: "Email is not register"
         })
       }
+
+      // Checking if mail is already verified or not
       if (userData.isVerified == 1) {
         return res.status(400).json({
           success: false,
           msg: userData.email + " is already verified"
         })
       }
+
+      // Sending verification link through mail
       const msg = `<p>Hi ${userData.name}, please verify your email using this <a href="http://127.0.0.1:5000/API/mail-verification?id=${userData._id}">verification link</a>.</p>`;
       mailers.sendMail(email, 'Mail Verification', msg);
       return res.status(200).json({
@@ -87,11 +96,56 @@ const sendMailVerification = async (req, res) => {
       msg: error.message
     })
   }
+}
+
+const passwordReset = async (req, res) => {
+  try {
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({
+        success: false,
+        msg: errors.array()
+      })
+    }
+
+    const { email } = req.body;
+    const userData = await User.findOne({ email });
+    if (!userData) {
+      res.status(400).json({
+        success: false,
+        msg: "Email is not registered"
+      })
+    }
+    else {
+      const randomString =  randomstring.generate();
+      const content = '<p>Hii ' + userData.name + ', Please click <a href = "http://127.0.0.1:5000/API/reset-password?token=' + randomString + '">here</a> to reset your password</p>';
+      const resetRecord = new PasswordReset({
+        userId: userData._id,
+        token: randomString
+      });
+
+      await resetRecord.save();
+
+      mailers.sendMail(userData.email, 'Password Reset', content);
+      res.status(201).json({
+        success: true,
+        msg: `Reset password mail sent on this ${userData.email}`
+      })
+    }
 
 
+  }
+  catch (error) {
+    res.status(400).json({
+      success: false,
+      msg: error.message
+    })
+  }
 }
 
 module.exports = {
   mailVerification,
-  sendMailVerification
+  sendMailVerification,
+  passwordReset
 };

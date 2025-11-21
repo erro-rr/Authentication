@@ -1,8 +1,8 @@
 const { check } = require('express-validator');
 
 exports.registerValidator = [
-    check('name', 'Name is require').not().isEmpty(),
-    check('email', 'Valid email is require').isEmail().normalizeEmail({
+    check('name', 'Name is required').not().isEmpty(),
+    check('email', 'Valid email is required').isEmail().normalizeEmail({
         gmail_remove_dots: true
     }),
     check('password', `Password must be at least 6 characters long and contain:
@@ -31,7 +31,13 @@ exports.registerValidator = [
 ]
 
 exports.sendEmailVerificationValidator = [
-    check('email', 'Valid email is require').isEmail().normalizeEmail({
+    check('email', 'Valid email is required').isEmail().normalizeEmail({
         gmail_remove_dots: true
+    })
+]
+
+exports.passwordReset=[
+    check('email','Valid email is required').isEmail().normalizeEmail({
+        gmail_remove_dots:true
     })
 ]
