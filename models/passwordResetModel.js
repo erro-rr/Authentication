@@ -8,7 +8,12 @@ const passwordResetSchema = new mongoose.Schema({
     token: {
         type: String,
         default: true
+    },
+
+},
+    {
+        collection: "password_reset" // fixed name
     }
 
-})
-module.exports = mongoose.model('passwordReset', passwordResetSchema);
+)
+module.exports = mongoose.model('passwordResetModel', passwordResetSchema);

@@ -4,7 +4,8 @@ const { message } = require('statuses');
 const mailers = require('../helpers/mailers');
 const { validationResult } = require("express-validator");
 const randomstring = require('randomstring');
-const PasswordReset = require('../models/passwordReset');
+const passwordResetModel = require('../models/passwordResetModel');
+const bcrypt = require('bcrypt');
 
 const mailVerification = async (req, res) => {
   try {
@@ -98,7 +99,7 @@ const sendMailVerification = async (req, res) => {
   }
 }
 
-const passwordReset = async (req, res) => {
+const forgotPassword = async (req, res) => {
   try {
 
     const errors = validationResult(req);
@@ -118,9 +119,9 @@ const passwordReset = async (req, res) => {
       })
     }
     else {
-      const randomString =  randomstring.generate();
+      const randomString = randomstring.generate();
       const content = '<p>Hii ' + userData.name + ', Please click <a href = "http://127.0.0.1:5000/API/reset-password?token=' + randomString + '">here</a> to reset your password</p>';
-      const resetRecord = new PasswordReset({
+      const resetRecord = new passwordResetModel({
         userId: userData._id,
         token: randomString
       });
@@ -142,10 +143,84 @@ const passwordReset = async (req, res) => {
       msg: error.message
     })
   }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    if (req.query.token == undefined) {
+      return res.render('404');
+      console.log("1");
+    }
+    const userPasswordResetData = await passwordResetModel.findOne({ token: req.query.token })
+    if (!userPasswordResetData) {
+      console.log("2");
+      return res.render('404');
+    }
+    else {
+      return res.render('passwordResetPage', { userPasswordResetData });
+    }
+
+  }
+  catch (error) {
+    console.log(error);
+    return res.render('404');
+  }
+}
+
+
+const updatePassword = async (req, res) => {
+  try {
+    const { user_id, password, c_password } = req.body;
+    const userPasswordResetData = await passwordResetModel.findOne({ _id: user_id });
+
+    if (!userPasswordResetData) {
+      // If null → never render reset form again
+      return res.render("404");
+    }
+    if (password != c_password) {
+      res.render('passwordResetPage', { userPasswordResetData, error: 'Your confirm password is not matching with new password' })
+    }
+    else {
+      if (userPasswordResetData.token !== req.query.token) {
+        return res.render("passwordResetPage", {
+          userPasswordResetData,
+          error: "Invalid or expired token",
+        });
+      }
+      else {
+        console.log("jjjjj")
+        const hashPassword = await bcrypt.hash(c_password, 10);
+        await User.findByIdAndUpdate(user_id, {
+          $set: {
+            password: hashPassword
+          }
+        })
+        await passwordResetModel.findByIdAndDelete(user_id);
+        return res.redirect('/API/reset-success');
+      }
+    }
+  }
+  catch (error) {
+    console.log(error);
+    res.render('404');
+  }
+}
+
+const resetSuccess = async (req, res) => {
+  try {
+    return res.render('resetSuccess.ejs');
+  }
+  catch (error) {
+    console.log(error);
+    return res.render('404');
+  }
 }
 
 module.exports = {
   mailVerification,
   sendMailVerification,
-  passwordReset
+  forgotPassword,
+  resetPassword,
+  updatePassword,
+  resetSuccess
 };

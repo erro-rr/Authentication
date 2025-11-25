@@ -36,8 +36,8 @@ exports.sendEmailVerificationValidator = [
     })
 ]
 
-exports.passwordReset=[
-    check('email','Valid email is required').isEmail().normalizeEmail({
-        gmail_remove_dots:true
+exports.passwordResetValidator = [
+    check('email', 'Valid email is required').isEmail().normalizeEmail({
+        gmail_remove_dots: true
     })
 ]
