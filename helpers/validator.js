@@ -41,3 +41,10 @@ exports.passwordResetValidator = [
         gmail_remove_dots: true
     })
 ]
+
+exports.userLoginValidator=[
+    check('email','Email is required').isEmail().normalizeEmail({
+        gmail_remove_dots:true
+    }),
+    check('password','Password is required').not().isEmpty()
+]

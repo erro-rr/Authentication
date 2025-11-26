@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const { validationResult } = require('express-validator');
 const deleteUploadFilefunc = require('../helpers/deleteUploadFile');
 const mailers = require('../helpers/mailers');
+const jwtToken = require('jsonwebtoken');
+require('dotenv').config();
 
 const userRegister = async (req, res) => {
   try {
@@ -75,6 +77,66 @@ const userRegister = async (req, res) => {
 };
 
 
+const userLogin = async (req, res) => {
+  try{
+  const errors = validationResult(req);
+  if(!errors.isEmpty()){
+    res.status(400).json({
+      status:false,
+      errors:errors.array()
+    })
+  }
+  else{
+  const { email, password } = req.body;
+  const userData = await user.findOne({ email });
+  if (!userData) {
+    return res.status(400).json({
+      success: false,
+      msg: "Invalid credentials"
+    })
+  }
+  const matchPassword = await bcrypt.compare(password, userData.password);
+  if (!matchPassword) {
+    return res.status(400).json({
+      success: false,
+      msg: "Invalid credentials"
+    })
+  }
+  else{
+
+  // generate jwt token
+
+  const generateJwtToken = jwtToken.sign({
+    id: userData._id,
+    email: userData.email
+  },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES
+
+    }
+  )
+
+  res.status(200).json({
+    success:true,
+    msg:"Login Successfully",
+    userData:userData,
+    token:generateJwtToken
+  })
+  }
+}
+  }
+catch(error){
+  console.log(error);
+  return res.status(400).json({
+    succes:false,
+    error:error
+  })
+}
+}
+
+
 module.exports = {
-  userRegister
+  userRegister,
+  userLogin
 };

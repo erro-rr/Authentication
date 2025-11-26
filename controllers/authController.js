@@ -149,11 +149,9 @@ const resetPassword = async (req, res) => {
   try {
     if (req.query.token == undefined) {
       return res.render('404');
-      console.log("1");
     }
     const userPasswordResetData = await passwordResetModel.findOne({ token: req.query.token })
     if (!userPasswordResetData) {
-      console.log("2");
       return res.render('404');
     }
     else {
@@ -188,7 +186,6 @@ const updatePassword = async (req, res) => {
         });
       }
       else {
-        console.log("jjjjj")
         const hashPassword = await bcrypt.hash(c_password, 10);
         await User.findByIdAndUpdate(user_id, {
           $set: {
