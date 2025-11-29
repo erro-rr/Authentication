@@ -6,7 +6,7 @@ const deleteUploadFilefunc = (file) => {
         const filePath = path.join(__dirname, '../public/images', file.filename);
         fs.unlink(filePath, (err) => {
             if (err) {
-                console.log("Unable to delte file" + err);
+                console.log("Unable to delete file" + err);
             }
         })
     }

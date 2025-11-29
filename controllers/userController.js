@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const deleteUploadFilefunc = require('../helpers/deleteUploadFile');
 const mailers = require('../helpers/mailers');
 const jwtToken = require('jsonwebtoken');
+const path = require('path');
 require('dotenv').config();
 
 const userRegister = async (req, res) => {
@@ -78,65 +79,148 @@ const userRegister = async (req, res) => {
 
 
 const userLogin = async (req, res) => {
-  try{
-  const errors = validationResult(req);
-  if(!errors.isEmpty()){
-    res.status(400).json({
-      status:false,
-      errors:errors.array()
-    })
-  }
-  else{
-  const { email, password } = req.body;
-  const userData = await user.findOne({ email });
-  if (!userData) {
-    return res.status(400).json({
-      success: false,
-      msg: "Invalid credentials"
-    })
-  }
-  const matchPassword = await bcrypt.compare(password, userData.password);
-  if (!matchPassword) {
-    return res.status(400).json({
-      success: false,
-      msg: "Invalid credentials"
-    })
-  }
-  else{
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
 
-  // generate jwt token
-
-  const generateJwtToken = jwtToken.sign({
-    id: userData._id,
-    email: userData.email
-  },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRES
-
+      return res.status(400).json({
+        status: false,
+        errors: errors.array()
+      })
     }
-  )
+    else {
+      const { email, password } = req.body;
+      const userData = await user.findOne({ email });
+      if (!userData) {
+        return res.status(400).json({
+          success: false,
+          msg: "Invalid credentials"
+        })
+      }
 
-  res.status(200).json({
-    success:true,
-    msg:"Login Successfully",
-    userData:userData,
-    token:generateJwtToken
-  })
+      // checking user is verified or not
+
+      if (userData.isVerified == 0) {
+        return res.status(400).json({
+          status: false,
+          msg: "User is not verified"
+        })
+      }
+
+      // compare password
+      const matchPassword = await bcrypt.compare(password, userData.password);
+      if (!matchPassword) {
+        return res.status(400).json({
+          success: false,
+          msg: "Invalid credentials"
+        })
+      }
+      else {
+
+        // generate jwt token
+
+        const generateJwtToken = jwtToken.sign({
+          id: userData._id,
+          email: userData.email
+        },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: process.env.JWT_EXPIRES
+
+          }
+        )
+
+        return res.status(200).json({
+          success: true,
+          msg: "Login Successfully",
+          userData: userData,
+          token: generateJwtToken,
+          tokenType: "Bearer",
+          tokenExpiresIn: process.env.JWT_EXPIRES
+        })
+      }
+    }
+  }
+  catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      succes: false,
+      error: error
+    })
   }
 }
+
+const getUserProfile = async (req, res) => {
+  try {
+    const UserData = await user.findById({ _id: req.user.id })
+    return res.status(200).json({
+      status: true,
+      user: UserData
+    })
   }
-catch(error){
-  console.log(error);
-  return res.status(400).json({
-    succes:false,
-    error:error
-  })
-}
+  catch (error) {
+    return res.status(400).json({
+      status: false,
+      msg: "Unable to get profile data"
+    })
+  }
+
 }
 
+const updateProfile = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      deleteUploadFilefunc(req.file);
+      return res.status(400).json({
+        status: false,
+        errors: errors.array()
+      })
+    }
+    else {
+      if (req.body === undefined) {
+        return res.status(400).json({
+          status: false,
+          msg: "Please update atleast one key value pair"
+        })
+      }
+      const { name, mobile } = req.body;
+      const data = {
+        name: name,
+        mobile: mobile
+      }
+      if (req.file !== undefined) {
+        data.image = 'image' + req.file.filename
+        const oldUser = await user.findOne({_id:req.user.id});
+        // console.log(oldUser);
+        // const oldfile = path.join(__dirname,'../public/images',oldUser.image);
+        // deleteUploadFilefunc(oldUser.image);
 
+      }
+
+      const updatedData = await user.findByIdAndUpdate(
+        { _id: req.user.id },
+        { $set: data },
+        { new: true }
+      )
+
+      return res.status(200).json({
+        status: true,
+        msg: "User update Succesfully",
+        data: updatedData
+      })
+    }
+  }
+  catch (error) {
+    return res.status(400).json({
+      status: false,
+      msg: "Unable to update profile"
+    })
+  }
+}
 module.exports = {
   userRegister,
-  userLogin
+  userLogin,
+  getUserProfile,
+  updateProfile
 };

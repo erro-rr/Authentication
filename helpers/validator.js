@@ -15,7 +15,7 @@ exports.registerValidator = [
         minLowercase: 1,
         minNumbers: 1
     }),
-    check('mobile', 'Mobile no length should contains 10-12 numbers').isLength({
+    check('mobile', 'Mobile no length should contains 10-12 numbers').isNumeric().isLength({
         min: 10,
         max: 12
     }),
@@ -42,9 +42,17 @@ exports.passwordResetValidator = [
     })
 ]
 
-exports.userLoginValidator=[
-    check('email','Email is required').isEmail().normalizeEmail({
-        gmail_remove_dots:true
+exports.userLoginValidator = [
+    check('email', 'Email is required').isEmail().normalizeEmail({
+        gmail_remove_dots: true
     }),
-    check('password','Password is required').not().isEmpty()
+    check('password', 'Password is required').not().isEmpty()
+]
+
+exports.updateProfileValidator=[
+    check('name','Name is required').optional().not().isEmpty(),
+    check('mobile','Mobile no length should contains 10-12 numbers').optional().isNumeric().isLength({
+        max:12,
+        min:10
+    })
 ]

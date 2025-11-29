@@ -3,7 +3,9 @@ const path = require('path');
 const multer = require('multer');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { registerValidator,userLoginValidator} = require('../helpers/validator');
+const { registerValidator, userLoginValidator,updateProfileValidator } = require('../helpers/validator');
+const tokenVerification = require('../middleware/auth');
+
 
 // Middleware
 router.use(express.json());
@@ -38,7 +40,9 @@ const upload = multer({
 
 // Router for User registration
 router.post('/register', upload.single('image'), registerValidator, userController.userRegister);
-router.post('/user-login',userLoginValidator,userController.userLogin);
+router.post('/user-login', userLoginValidator, userController.userLogin);
+router.get('/user-profile', tokenVerification, userController.getUserProfile);
+router.post('/update-user-profile',tokenVerification,upload.single('image'),updateProfileValidator,userController.updateProfile);
 
 module.exports = router;
 

@@ -1,11 +1,11 @@
  Register User   --- Done !
  Mail Verification --- Done // need to add link validity time feature
- Login
- Jwt Authentication
- User Profile
+ Login --- Done
+ Jwt Authentication ---  Done
+ User Profile --- Done
  Refresh Token
  Forget Password // Done // need to add link validity time feature
  Reset Password // Done  
- Authentication API's
+ Authentication API's --- Done
  Logout API
  
