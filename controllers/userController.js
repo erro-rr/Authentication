@@ -13,7 +13,8 @@ const userRegister = async (req, res) => {
     if (!error.isEmpty()) {
 
       // If we found any error due to validation then delete image file which is already upload and send error status
-      deleteUploadFilefunc(req.file);
+      const filepath = path.join(__dirname, '../public/images', req.file.filename);
+      await deleteUploadFilefunc(filepath);
       return res.status(400).json({
         success: false,
         Msg: "Error",
@@ -23,14 +24,15 @@ const userRegister = async (req, res) => {
 
     // taking parameter from request body
     const { name, email, password, mobile } = req.body;
-    console.log(req.body);
+    console.log(req.file.filename);
 
     // Checking if email is already register or not
     const isUserExists = await user.findOne({ email });
     if (isUserExists) {
 
       // If email is aleady in db or any user is register with this email then delete the tmp image and send error status
-      deleteUploadFilefunc(req.file);
+      const filepath = path.join(__dirname, '../public/images', req.file.filename);
+      await deleteUploadFilefunc(filepath);
       return res.status(400).json({
         success: false,
         msg: 'Email Already Exists',
@@ -46,14 +48,11 @@ const userRegister = async (req, res) => {
       email,
       password: hashPassword,
       mobile,
-      image: 'images/' + req.file.filename,
+      image: req.file.filename,
     });
-
-    console.log('New User:', newUser);
 
     // save data in mongo and send status 
     const userData = await newUser.save();
-    console.log(userData);
     const msg = `<p>Hi ${name}, please verify your email using this <a href="http://127.0.0.1:5000/API/mail-verification?id=${userData._id}">verification link</a>.</p>`;
 
     mailers.sendMail(email, 'Mail Verification', msg);
@@ -171,7 +170,8 @@ const updateProfile = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      deleteUploadFilefunc(req.file);
+      const filepath = path.join(__dirname, '../public/images', req.file.filename);
+      await deleteUploadFilefunc(filepath);
       return res.status(400).json({
         status: false,
         errors: errors.array()
@@ -189,20 +189,23 @@ const updateProfile = async (req, res) => {
         name: name,
         mobile: mobile
       }
+      let oldfilepath = null
       if (req.file !== undefined) {
-        data.image = 'image' + req.file.filename
-        const oldUser = await user.findOne({_id:req.user.id});
-        // console.log(oldUser);
-        // const oldfile = path.join(__dirname,'../public/images',oldUser.image);
-        // deleteUploadFilefunc(oldUser.image);
-
+        data.image = req.file.filename
+        const oldUser = await user.findOne({ _id: req.user.id });
+        oldfilepath = path.join(__dirname, '../public/images', oldUser.image);
+        console.log(oldfilepath);
       }
-
       const updatedData = await user.findByIdAndUpdate(
         { _id: req.user.id },
         { $set: data },
         { new: true }
       )
+
+      // delete after saving new data
+      if (oldfilepath) {
+        await deleteUploadFilefunc(oldfilepath);
+      }
 
       return res.status(200).json({
         status: true,
@@ -212,6 +215,7 @@ const updateProfile = async (req, res) => {
     }
   }
   catch (error) {
+    console.log(error);
     return res.status(400).json({
       status: false,
       msg: "Unable to update profile"

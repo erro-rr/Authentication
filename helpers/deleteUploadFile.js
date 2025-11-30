@@ -1,14 +1,11 @@
-const path = require('path');
-const fs = require('fs');
-const deleteUploadFilefunc = (file) => {
-    if (file) {
-        console.log(file.filename);
-        const filePath = path.join(__dirname, '../public/images', file.filename);
-        fs.unlink(filePath, (err) => {
-            if (err) {
-                console.log("Unable to delete file" + err);
-            }
-        })
+const fs = require('fs').promises;
+const deleteUploadFilefunc = async (filePath) => {
+    try {
+        await fs.unlink(filePath);
+        console.log("file deleted Successfully");
+    }
+    catch (error) {
+        console.log(error);
     }
 }
 
