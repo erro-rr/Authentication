@@ -41,8 +41,10 @@ const upload = multer({
 // Router for User registration
 router.post('/register', upload.single('image'), registerValidator, userController.userRegister);
 router.post('/user-login', userLoginValidator, userController.userLogin);
+// Authenticated Endpoints
 router.get('/user-profile', tokenVerification, userController.getUserProfile);
 router.post('/update-user-profile', tokenVerification, upload.single('image'), updateProfileValidator, userController.updateProfile);
+router.get('/user-logout',tokenVerification,userController.userLogout);
 
 module.exports = router;
 

@@ -11,6 +11,7 @@ const passwordResetSchema = new mongoose.Schema({
     },
 
 },
+    { timestamps: true },
     {
         collection: "password_reset" // fixed name
     }

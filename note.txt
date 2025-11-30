@@ -3,9 +3,9 @@
  Login --- Done
  Jwt Authentication ---  Done
  User Profile --- Done
- Refresh Token
+ Refresh Token --- Done
  Forget Password // Done // need to add link validity time feature
  Reset Password // Done  
  Authentication API's --- Done
- Logout API
+ Logout API--- Done
  

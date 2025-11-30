@@ -1,4 +1,5 @@
 const user = require('../models/userModel');
+const blacklistTokenModel = require('../models/blacklistTokenModel');
 const bcrypt = require('bcrypt');
 const { validationResult } = require('express-validator');
 const deleteUploadFilefunc = require('../helpers/deleteUploadFile');
@@ -24,7 +25,7 @@ const userRegister = async (req, res) => {
 
     // taking parameter from request body
     const { name, email, password, mobile } = req.body;
-    console.log(req.file.filename);
+    // console.log(req.file.filename);
 
     // Checking if email is already register or not
     const isUserExists = await user.findOne({ email });
@@ -118,7 +119,7 @@ const userLogin = async (req, res) => {
 
         // generate jwt token
 
-        const generateJwtToken = jwtToken.sign({
+        const accessToken = jwtToken.sign({
           id: userData._id,
           email: userData.email
         },
@@ -129,13 +130,28 @@ const userLogin = async (req, res) => {
           }
         )
 
+
+        const refreshToken = jwtToken.sign(
+          {
+            id: userData._id,
+            email: userData.email
+          },
+          process.env.JWT_REFRESH_SECRET,
+          {
+            expiresIn: process.env.JWT_REFRESH_EXPIRES
+          }
+        )
+
         return res.status(200).json({
           success: true,
           msg: "Login Successfully",
           userData: userData,
-          token: generateJwtToken,
-          tokenType: "Bearer",
-          tokenExpiresIn: process.env.JWT_EXPIRES
+          accessToken: accessToken,
+          accessTokenExpiresIn: process.env.JWT_EXPIRES,
+          refreshToken: refreshToken,
+          refreshTokenExpiresIn: process.env.JWT_REFRESH_EXPIRES,
+          tokenType: "Bearer"
+
         })
       }
     }
@@ -194,7 +210,7 @@ const updateProfile = async (req, res) => {
         data.image = req.file.filename
         const oldUser = await user.findOne({ _id: req.user.id });
         oldfilepath = path.join(__dirname, '../public/images', oldUser.image);
-        console.log(oldfilepath);
+        // console.log(oldfilepath);
       }
       const updatedData = await user.findByIdAndUpdate(
         { _id: req.user.id },
@@ -222,9 +238,39 @@ const updateProfile = async (req, res) => {
     })
   }
 }
+const userLogout = async (req, res) => {
+  try {
+    const completeToken = req.headers['authorization'];
+    if (!completeToken) {
+      return res.status(400).json({
+        status: false,
+        msg: "Invalide token"
+      })
+    }
+    const bearerToken = completeToken.split(" ");
+    const token = bearerToken[1];
+    const newblacklistedtoken = new blacklistTokenModel({
+      token: token
+    })
+    await newblacklistedtoken.save();
+
+    return res.status(200).json({
+      status: true,
+      msg: "User logout sucessfully"
+    })
+  }
+  catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      status: false,
+      msg: "Unable to log out User"
+    })
+  }
+}
 module.exports = {
   userRegister,
   userLogin,
   getUserProfile,
-  updateProfile
+  updateProfile,
+  userLogout
 };

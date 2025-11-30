@@ -6,6 +6,8 @@ const { validationResult } = require("express-validator");
 const randomstring = require('randomstring');
 const passwordResetModel = require('../models/passwordResetModel');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const mailVerification = async (req, res) => {
   try {
@@ -56,7 +58,7 @@ const sendMailVerification = async (req, res) => {
     // checking mail validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         msg: 'Errors',
         Errors: errors.array()
@@ -104,7 +106,7 @@ const forgotPassword = async (req, res) => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         msg: errors.array()
       })
@@ -113,7 +115,7 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body;
     const userData = await User.findOne({ email });
     if (!userData) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         msg: "Email is not registered"
       })
@@ -129,7 +131,7 @@ const forgotPassword = async (req, res) => {
       await resetRecord.save();
 
       mailers.sendMail(userData.email, 'Password Reset', content);
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         msg: `Reset password mail sent on this ${userData.email}`
       })
@@ -138,7 +140,7 @@ const forgotPassword = async (req, res) => {
 
   }
   catch (error) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       msg: error.message
     })
@@ -176,7 +178,7 @@ const updatePassword = async (req, res) => {
       return res.render("404");
     }
     if (password != c_password) {
-      res.render('passwordResetPage', { userPasswordResetData, error: 'Your confirm password is not matching with new password' })
+     return res.render('passwordResetPage', { userPasswordResetData, error: 'Your confirm password is not matching with new password' })
     }
     else {
       if (userPasswordResetData.token !== req.query.token) {
@@ -199,7 +201,7 @@ const updatePassword = async (req, res) => {
   }
   catch (error) {
     console.log(error);
-    res.render('404');
+   return res.render('404');
   }
 }
 
@@ -213,11 +215,37 @@ const resetSuccess = async (req, res) => {
   }
 }
 
+const refreshToken = async(req,res)=>{
+  try{
+    const{id,email}= req.user;
+    const token = jwt.sign(
+      {id:id},
+      process.env.JWT_SECRET,
+      {expiresIn:process.env.JWT_EXPIRES}
+    )
+
+    return res.status(200).json({
+      status:true,
+      msg:"Access token generate Successfully!",
+      token:token,
+      tokenExpireIn:process.env.JWT_EXPIRES
+    })
+  }
+  catch(error){
+    return res.status(400).json({
+      status:false,
+      msg:"Unable to refresh token"
+    })
+  }
+
+}
+
 module.exports = {
   mailVerification,
   sendMailVerification,
   forgotPassword,
   resetPassword,
   updatePassword,
-  resetSuccess
+  resetSuccess,
+  refreshToken
 };
