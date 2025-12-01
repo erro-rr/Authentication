@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { trim } = require('validator');
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -6,7 +7,10 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true
+        required: true,
+        unique:true,
+        lowercase: true,
+        trim:true
     },
     password: {
         type: String,
@@ -17,17 +21,16 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     isVerified: {
-        type: Number,
+        type: Boolean,
         default: 0 // 0 for unverified and 1 for verified
     },
     image: {
         type: String,
-        required: true
+        default:null
     }
 },
-    { timestamps: true },
-    {
-        collection: "User"
+    { timestamps: true,
+      collection: "User"
     }
 )
 

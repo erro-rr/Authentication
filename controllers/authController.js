@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../models/userModel');
+const otpModelSchema = require('../models/otpModelScehma');
 const { message } = require('statuses');
 const mailers = require('../helpers/mailers');
 const { validationResult } = require("express-validator");
@@ -178,7 +179,7 @@ const updatePassword = async (req, res) => {
       return res.render("404");
     }
     if (password != c_password) {
-     return res.render('passwordResetPage', { userPasswordResetData, error: 'Your confirm password is not matching with new password' })
+      return res.render('passwordResetPage', { userPasswordResetData, error: 'Your confirm password is not matching with new password' })
     }
     else {
       if (userPasswordResetData.token !== req.query.token) {
@@ -201,7 +202,7 @@ const updatePassword = async (req, res) => {
   }
   catch (error) {
     console.log(error);
-   return res.render('404');
+    return res.render('404');
   }
 }
 
@@ -215,28 +216,90 @@ const resetSuccess = async (req, res) => {
   }
 }
 
-const refreshToken = async(req,res)=>{
-  try{
-    const{id,email}= req.user;
+const refreshToken = async (req, res) => {
+  try {
+    const { id, email } = req.user;
     const token = jwt.sign(
-      {id:id},
+      { id: id },
       process.env.JWT_SECRET,
-      {expiresIn:process.env.JWT_EXPIRES}
+      { expiresIn: process.env.JWT_EXPIRES }
     )
 
     return res.status(200).json({
-      status:true,
-      msg:"Access token generate Successfully!",
-      token:token,
-      tokenExpireIn:process.env.JWT_EXPIRES
+      status: true,
+      msg: "Access token generate Successfully!",
+      token: token,
+      tokenExpireIn: process.env.JWT_EXPIRES
     })
   }
-  catch(error){
+  catch (error) {
     return res.status(400).json({
-      status:false,
-      msg:"Unable to refresh token"
+      status: false,
+      msg: "Unable to refresh token"
     })
   }
+
+}
+
+// generate OTP 
+const generateOTP = () => {
+  return Math.floor(1000 + Math.random() * 9000);
+}
+
+const sendOTP = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        status: false,
+        msg: "error",
+        error: errors.array()
+      })
+    }
+    else {
+      const { email } = req.body;
+      const userData = await User.findOne({ email: email });
+      console.log(userData);
+      if (!userData) {
+        return res.status(400).json({
+          status: false,
+          msg: "Email is not Register. Please check!!"
+        })
+      }
+
+      if (userData.isVerified == 1) {
+        return res.status(400).json({
+          status: false,
+          msg: "User is already verified"
+        })
+      }
+
+      const OTP = generateOTP();
+      console.log(OTP);
+      const saveOTP = new otpModelSchema({
+        user_id: userData._id,
+        otp: OTP
+      })
+      const msg = `<p>Hi ${userData.name} <br></br> Please find your OTP for verification ${OTP}</p>`;
+      mailers.sendMail(email, 'OTP for verification', msg);
+      await saveOTP.save();
+
+      return res.status(201).json({
+        status: true,
+        msg: "OTP send to the register email"
+      })
+
+    }
+
+  }
+  catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      status: false,
+      msg: "Unable to Send OTP"
+    })
+  }
+
 
 }
 
@@ -247,5 +310,6 @@ module.exports = {
   resetPassword,
   updatePassword,
   resetSuccess,
-  refreshToken
+  refreshToken,
+  sendOTP
 };

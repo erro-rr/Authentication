@@ -56,3 +56,9 @@ exports.updateProfileValidator=[
         min:10
     })
 ]
+
+exports.sendOTPValidator = [
+    check('email', 'Valid email is required').isEmail().normalizeEmail({
+        gmail_remove_dots: true
+    })
+]

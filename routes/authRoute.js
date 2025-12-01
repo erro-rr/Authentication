@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { sendEmailVerificationValidator, passwordResetValidator } = require('../helpers/validator')
+const { sendEmailVerificationValidator, passwordResetValidator,sendOTPValidator } = require('../helpers/validator')
 const refreshTokenMiddleware=require('../middleware/refreshTokenMiddleware');
 router.use(express.json());
 
@@ -14,6 +14,7 @@ router.post('/reset-password', authController.updatePassword);
 router.get('/reset-success', authController.resetSuccess);
 // Authenticated Endpoints
 router.get('/refresh-token',refreshTokenMiddleware,authController.refreshToken);
+router.get('/send-otp',sendOTPValidator,authController.sendOTP);
 
 
 module.exports = router;

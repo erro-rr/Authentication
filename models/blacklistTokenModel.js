@@ -8,9 +8,7 @@ const blacklistTokenModel = new mongoose.Schema({
 
 },
     {
-        timestamps: true
-    },
-    {
+        timestamps: true,
         collection: "blacklistTokenModel"
     }
 )
