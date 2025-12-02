@@ -13,7 +13,7 @@ const otpModelSchema = new mongoose.Schema({
     },
     timestamp:{
         type:Date,
-        default:Date.now(),
+        default:Date.now,
         required:true,
         get:(timestamp)=>timestamp.getTime(),
         set:(timestamp)=>new Date(timestamp)

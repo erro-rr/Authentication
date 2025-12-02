@@ -9,6 +9,7 @@ const passwordResetModel = require('../models/passwordResetModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const { otpValidation1min, otpValidation3min } = require('../helpers/otpValidation');
 
 const mailVerification = async (req, res) => {
   try {
@@ -246,6 +247,7 @@ const generateOTP = () => {
   return Math.floor(1000 + Math.random() * 9000);
 }
 
+// Send OTP
 const sendOTP = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -259,7 +261,6 @@ const sendOTP = async (req, res) => {
     else {
       const { email } = req.body;
       const userData = await User.findOne({ email: email });
-      console.log(userData);
       if (!userData) {
         return res.status(400).json({
           status: false,
@@ -274,15 +275,25 @@ const sendOTP = async (req, res) => {
         })
       }
 
+      const otpData = await otpModelSchema.findOne({ user_id: userData._id });
+      const otpFlag = await otpValidation1min(otpData.timestamp);
+
+      if (!otpFlag) {
+        return res.status(400).json({
+          status: false,
+          msg: "Try again in some time !!!"
+        })
+      }
       const OTP = generateOTP();
-      console.log(OTP);
-      const saveOTP = new otpModelSchema({
-        user_id: userData._id,
-        otp: OTP
-      })
+      const c_time = new Date();
+      await otpModelSchema.findOneAndUpdate(
+        { user_id: userData._id },
+        { $set: { otp: OTP, timestamp: c_time.getTime() } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      )
+      // sending email
       const msg = `<p>Hi ${userData.name} <br></br> Please find your OTP for verification ${OTP}</p>`;
       mailers.sendMail(email, 'OTP for verification', msg);
-      await saveOTP.save();
 
       return res.status(201).json({
         status: true,
@@ -303,6 +314,76 @@ const sendOTP = async (req, res) => {
 
 }
 
+const recieveOTPVerification = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        status: false,
+        msg: "Errors",
+        Errors: errors.array()
+      })
+    }
+
+    const { userID, OTP } = req.body;
+    const userData = await User.findById(userID);
+
+    if (!userData) {
+      return res.status(400).json({
+        status: false,
+        "msg": "User is not found"
+      })
+    }
+
+    if (userData.isVerified == 1) {
+      return res.status(400).json({
+        status: false,
+        msg: "User is already verified"
+      })
+    }
+
+    const otpData = await otpModelSchema.findOne({ user_id: userData._id });
+    if (!otpData) {
+      return res.status(400).json({
+        status: false,
+        msg: "OTP not found, Please request new one !!"
+      })
+    }
+    const isOtpExpired = await otpValidation3min(otpData.timestamp);
+    if (isOtpExpired) {
+      return res.status(400).json({
+        status: false,
+        msg: "OTP is expired, It is valid for 3 minutes"
+      })
+    }
+
+    const isOTPValid = Number(OTP) === otpData.otp;
+
+    if (!isOTPValid) {
+      return res.status(400).json({
+        status: false,
+        msg: "OTP is worong !!!"
+      })
+    }
+    else {
+      userData.isVerified = 1;
+      await userData.save();
+      return res.status(200).json({
+        status: true,
+        msg: "OTP is verified !!!"
+      })
+
+    }
+  }
+  catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      status: false,
+      msg: "Unable to verify OTP"
+    })
+  }
+}
+
 module.exports = {
   mailVerification,
   sendMailVerification,
@@ -311,5 +392,6 @@ module.exports = {
   updatePassword,
   resetSuccess,
   refreshToken,
-  sendOTP
+  sendOTP,
+  recieveOTPVerification
 };

@@ -62,3 +62,11 @@ exports.sendOTPValidator = [
         gmail_remove_dots: true
     })
 ]
+
+exports.recieveOTPValidator = [
+    check('userID','User Id is required').not().isEmpty(),
+    check('OTP','Valid OTP length is 4').not().isEmpty().isNumeric().isLength({
+        max:4,
+        min:4
+    })
+]
