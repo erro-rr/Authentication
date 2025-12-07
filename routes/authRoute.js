@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { sendEmailVerificationValidator, passwordResetValidator,sendOTPValidator,recieveOTPValidator } = require('../helpers/validator')
+const { sendEmailVerificationValidator, passwordResetValidator,sendOTPValidator,recieveOTPValidator,resetPasswordValidator } = require('../helpers/validator')
 const refreshTokenMiddleware=require('../middleware/refreshTokenMiddleware');
 router.use(express.json());
 
@@ -11,7 +11,7 @@ router.get('/send-mail-verification', sendEmailVerificationValidator, authContro
 // use for sending mail for forgot password
 router.post('/forgot-password', passwordResetValidator, authController.forgotPassword);
 router.get('/reset-password', authController.resetPassword);
-router.post('/reset-password', authController.updatePassword);
+router.post('/reset-password',resetPasswordValidator, authController.updatePassword);
 router.get('/reset-success', authController.resetSuccess);
 
 // Authenticated Endpoints

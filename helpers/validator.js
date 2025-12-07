@@ -1,4 +1,4 @@
-const { check } = require('express-validator');
+const { check,body } = require('express-validator');
 
 exports.registerValidator = [
     check('name', 'Name is required').not().isEmpty(),
@@ -70,3 +70,12 @@ exports.recieveOTPValidator = [
         min:4
     })
 ]
+
+exports.resetPasswordValidator = [
+  body("password")
+    .notEmpty().withMessage("Password is required")
+    .isLength({ min: 6 }).withMessage("Password must be at least 6 characters long"),
+
+  body("c_password")
+    .notEmpty().withMessage("Confirm password is required"),
+];

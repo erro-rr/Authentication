@@ -126,16 +126,15 @@ const forgotPassword = async (req, res) => {
       const randomString = randomstring.generate();
       const content = '<p>Hii ' + userData.name + ', Please click <a href = "http://127.0.0.1:5000/API/reset-password?token=' + randomString + '">here</a> to reset your password</p>';
       const resetRecord = new passwordResetModel({
+        email: email,
         userId: userData._id,
         token: randomString
       });
-
       await resetRecord.save();
-
-      mailers.sendMail(userData.email, 'Password Reset', content);
+      mailers.sendMail(email, 'Password Reset', content);
       return res.status(201).json({
         success: true,
-        msg: `Reset password mail sent on this ${userData.email}`
+        msg: `Reset password mail sent on this ${email}`
       })
     }
 
@@ -172,40 +171,58 @@ const resetPassword = async (req, res) => {
 
 const updatePassword = async (req, res) => {
   try {
-    const { user_id, password, c_password } = req.body;
-    const userPasswordResetData = await passwordResetModel.findOne({ _id: user_id });
+    const { reset_id, password, c_password } = req.body;
+    const userPasswordResetData = await passwordResetModel.findOne({ _id: reset_id });
+
+    const errors = validationResult(req);
+    if(!errors.isEmpty()){
+      return res.render("passwordResetPage",
+        {userPasswordResetData,
+        error: errors.array()[0].msg
+    })
+    }
 
     if (!userPasswordResetData) {
-      // If null → never render reset form again
       return res.render("404");
     }
+
+    // Check password match
     if (password != c_password) {
-      return res.render('passwordResetPage', { userPasswordResetData, error: 'Your confirm password is not matching with new password' })
+      return res.render("passwordResetPage", {
+        userPasswordResetData,
+        error: "Your confirm password is not matching with new password"
+      });
     }
-    else {
-      if (userPasswordResetData.token !== req.query.token) {
-        return res.render("passwordResetPage", {
-          userPasswordResetData,
-          error: "Invalid or expired token",
-        });
-      }
-      else {
-        const hashPassword = await bcrypt.hash(c_password, 10);
-        await User.findByIdAndUpdate(user_id, {
-          $set: {
-            password: hashPassword
-          }
-        })
-        await passwordResetModel.findByIdAndDelete(user_id);
-        return res.redirect('/API/reset-success');
-      }
+
+    // Validate token matches URL token
+    if (userPasswordResetData.token !== req.query.token) {
+      return res.render("passwordResetPage", {
+        userPasswordResetData,
+        error: "Invalid or expired token"
+      });
     }
-  }
-  catch (error) {
+
+    // Hash password
+    const hashPassword = await bcrypt.hash(c_password, 10);
+
+    //  Update user using stored userId
+    await User.findByIdAndUpdate(userPasswordResetData.userId, {
+      $set: {
+        password: hashPassword
+      }
+    });
+
+    //  Delete the reset token record
+    await passwordResetModel.findByIdAndDelete(reset_id);
+
+    return res.redirect("/API/reset-success");
+
+  } catch (error) {
     console.log(error);
-    return res.render('404');
+    return res.render("404");
   }
-}
+};
+
 
 const resetSuccess = async (req, res) => {
   try {
@@ -275,30 +292,39 @@ const sendOTP = async (req, res) => {
         })
       }
 
+
       const otpData = await otpModelSchema.findOne({ user_id: userData._id });
-      const otpFlag = await otpValidation1min(otpData.timestamp);
+      if (otpData) {
+        const otpFlag = await otpValidation1min(otpData.timestamp);
+        console.log(otpFlag);
+        if (!otpFlag) {
+          return res.status(400).json({
+            status: false,
+            msg: "Try again in some time !!!"
+          })
+        }
+        else {
 
-      if (!otpFlag) {
-        return res.status(400).json({
-          status: false,
-          msg: "Try again in some time !!!"
-        })
+          const OTP = generateOTP();
+          const c_time = new Date();
+          await otpModelSchema.findOneAndUpdate(
+            { user_id: userData._id },
+            { $set: { otp: OTP, timestamp: c_time.getTime() } },
+            { upsert: true, new: false, setDefaultsOnInsert: true }
+          )
+
+
+          // sending email
+          const msg = `<p>Hi ${userData.name} <br></br> Please find your OTP for verification ${OTP}</p>`;
+          mailers.sendMail(email, 'OTP for verification', msg);
+
+          return res.status(201).json({
+            status: true,
+            msg: "OTP send to the register email"
+          })
+
+        }
       }
-      const OTP = generateOTP();
-      const c_time = new Date();
-      await otpModelSchema.findOneAndUpdate(
-        { user_id: userData._id },
-        { $set: { otp: OTP, timestamp: c_time.getTime() } },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      )
-      // sending email
-      const msg = `<p>Hi ${userData.name} <br></br> Please find your OTP for verification ${OTP}</p>`;
-      mailers.sendMail(email, 'OTP for verification', msg);
-
-      return res.status(201).json({
-        status: true,
-        msg: "OTP send to the register email"
-      })
 
     }
 
