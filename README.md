@@ -19,7 +19,7 @@ A simple authentication boilerplate using Node.js, Express, MongoDB (Mongoose), 
 1. Clone the repo and install dependencies:
 
 ```pwsh
-cd "https://github.com/erro-rr/Authentication.git"
+"https://github.com/erro-rr/Authentication.git"
 npm install
 ```
 
